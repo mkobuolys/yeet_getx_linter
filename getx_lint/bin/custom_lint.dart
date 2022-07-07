@@ -19,33 +19,29 @@ void main(List<String> args, SendPort sendPort) {
 
 class _GetXLinter extends PluginBase {
   @override
-  Stream<Lint> getLints(ResolvedUnitResult resolvedUnitResult) async* {
-    final library = resolvedUnitResult.libraryElement;
+  Stream<Lint> getLints(ResolvedUnitResult resolvedUnit) async* {
+    final library = resolvedUnit.libraryElement;
     final getXImports = library.imports.where(_isGetXImport);
 
     for (final getXImport in getXImports) {
-      final nameOffset = getXImport.nameOffset;
-      final importLineLength = getXImport.importLineLength;
+      final directive = resolvedUnit.unit.directives.firstWhere(
+        (directive) => directive.element == getXImport,
+      );
+      final offset = directive.offset;
+      final length = directive.length;
 
       yield Lint(
         code: 'yeet_getx_package',
         message: 'Using GetX, huh?',
         correction: 'Yeet the package and use something else.',
         severity: LintSeverity.error,
-        location: resolvedUnitResult.lintLocationFromOffset(
-          nameOffset,
-          length: importLineLength,
-        ),
+        location: resolvedUnit.lintLocationFromOffset(offset, length: length),
         getAnalysisErrorFixes: (Lint lint) async* {
-          final changeBuilder = ChangeBuilder(
-            session: resolvedUnitResult.session,
-          );
+          final changeBuilder = ChangeBuilder(session: resolvedUnit.session);
 
           await changeBuilder.addDartFileEdit(
             library.source.fullName,
-            (builder) => builder.addDeletion(
-              SourceRange(nameOffset, importLineLength + 1),
-            ),
+            (builder) => builder.addDeletion(SourceRange(offset, length + 1)),
           );
 
           final getXImportFix = PrioritizedSourceChange(
@@ -61,8 +57,4 @@ class _GetXLinter extends PluginBase {
       );
     }
   }
-}
-
-extension ImportElementX on ImportElement {
-  int get importLineLength => "import '${importedLibrary?.source.uri}';".length;
 }
