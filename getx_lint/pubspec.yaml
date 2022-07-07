@@ -1,0 +1,11 @@
+name: getx_lint
+description: GetX linter package.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=2.16.2 <3.0.0"
+
+dependencies:
+  analyzer: ^4.2.0
+  custom_lint_builder: ^0.0.9+1
